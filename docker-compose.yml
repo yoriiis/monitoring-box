@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+
+  nginx-proxy:
+    # Nginx-proxy version: v1.17.3
+    image: jwilder/nginx-proxy@sha256:7b33bdc57b0cb1bcfba4eb03b16387f12d4bbbd18bc7e1741566515c9aa288a3
+    container_name: monitoring-nginx-proxy
+    restart: ${RESTART_MODE}
+    ports:
+      - 8000:80
+      - 18443:443
+    volumes:
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+
+  grafana:
+    # Grafana version: v6.3.5
+    image: grafana/grafana@sha256:308be67d578c1603901fc12a544aa3968ee5cde572d478c84a96783cdeeef983
+    container_name: monitoring-grafana
+    restart: ${RESTART_MODE}
+    expose:
+      - 3000
+    environment:
+      - VIRTUAL_HOST=grafana.${HOST_NAME}
+      - TZ=${TIME_ZONE}
+      - GF_PATHS_CONFIG=/etc/grafana/grafana.ini
+      - GF_SERVER_ROOT_URL=https://grafana.${HOST_NAME}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,vonage-status-panel
+    user: "472"
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./config/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./config/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./config/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./config/grafana/notifiers.yml:/etc/grafana/provisioning/notifiers/notifiers.yml:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+
+  influxdb:
+    # Influxdb version: v1.7.8
+    image: influxdb@sha256:eb8ef3a545ff7c65219392c8054726bca39af2c3a6f47fd58f2920ad9101bcbf
+    container_name: monitoring-influxdb
+    restart: ${RESTART_MODE}
+    expose:
+      - 8086
+    environment:
+      - VIRTUAL_HOST=influxdb.${HOST_NAME}
+      - TZ=${TIME_ZONE}
+    volumes:
+      - ./influxdb:/var/lib/influxdb
+      - ./config/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf:ro
+
+  telegraf:
+    # Telegraf version: v1.11.5
+    image: telegraf@sha256:c48046442a0ce9c699a85d3562901ae9cf8eb90c16f5ad1aea56b0bfcfce61e0
+    container_name: monitoring-telegraf
+    restart: ${RESTART_MODE}
+    environment:
+      - VIRTUAL_HOST=telegraf.${HOST_NAME}
+      - TZ=${TIME_ZONE}
+    volumes:
+      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro

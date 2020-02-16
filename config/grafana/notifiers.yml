@@ -1,0 +1,11 @@
+notifiers:
+  - name: Slack
+    type: slack
+    uid: "notifier1"
+    is_default: true
+    send_reminder: false
+    frequency: 1h
+    disable_resolve_message: false
+    settings:
+      uploadImage: true
+      url: <SLACK_WEB_HOOK>
